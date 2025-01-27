@@ -11,8 +11,17 @@ const state = {
     text: '',
     lastUpdate: null,
     initialValue: ''
+  },
+  buffer: {
+    actions: [],
+    timeout: null,
+    processingInterval: null
   }
 };
+
+// Buffer configuration
+const BUFFER_PROCESS_INTERVAL = 1000; // Process buffer every second
+const BUFFER_MAX_SIZE = 10; // Maximum number of actions to store before processing
 
 // Helper function to clean and format text
 function formatInputText(text) {
@@ -26,19 +35,42 @@ function formatInputText(text) {
 }
 
 // Initialize content script
-function initialize() {
+async function initialize() {
   if (state.initialized) return;
   
   console.log('Initializing content script');
   setupEventListeners();
   setupRecordingIndicator();
+  setupMainWindow();
   state.initialized = true;
   
+  // Check if there's an active recording session
+  try {
+    const { sopData } = await chrome.storage.local.get('sopData');
+    if (sopData?.currentSession) {
+      console.log('Restoring recording state');
+      startRecording(sopData.currentSession.id);
+    }
+  } catch (error) {
+    console.error('Error checking recording state:', error);
+  }
+  
   // Notify background script that content script is ready
-  chrome.runtime.sendMessage({ 
+  chrome.runtime.sendMessage({
     type: 'CONTENT_SCRIPT_READY',
     url: window.location.href
   });
+}
+
+// Set up main window
+function setupMainWindow() {
+  const mainWindow = document.createElement('div');
+  mainWindow.className = 'sop-main-window';
+  mainWindow.innerHTML = `
+    <h2 style="margin-top: 0;">SOP Generator</h2>
+    <div id="sop-content"></div>
+  `;
+  document.body.appendChild(mainWindow);
 }
 
 // Function to throttle frequent events
@@ -157,6 +189,27 @@ function setupEventListeners() {
     state.currentInput.text = element.value;
   });
 
+  // Prevent form submission refresh
+  document.addEventListener("submit", (e) => {
+    if (state.isRecording) {
+      e.preventDefault();
+      logInputCompletion();
+    }
+  });
+
+  // Handle Enter key
+  document.addEventListener("keydown", (e) => {
+    if (state.isRecording && e.key === "Enter") {
+      const element = e.target;
+      if (element.tagName.toLowerCase() === "input" &&
+          element.form &&
+          !e.shiftKey) {
+        e.preventDefault();
+        logInputCompletion();
+      }
+    }
+  });
+
   // Handle input completion (when focus leaves the input or after a delay)
   document.addEventListener("blur", async (e) => {
     if (!state.isRecording) return;
@@ -241,26 +294,134 @@ function startRecording(sessionId) {
   state.isRecording = true;
   state.sessionId = sessionId;
   state.interactionLog = [];
+  state.buffer.actions = [];
   updateRecordingIndicator(true);
+  
+  // Initialize buffer processing
+  initializeBuffer();
+  
+  // Show main window and reset content
+  const mainWindow = document.querySelector('.sop-main-window');
+  if (mainWindow) {
+    mainWindow.style.display = 'block';
+    const contentElement = document.getElementById('sop-content');
+    if (contentElement) {
+      contentElement.innerHTML = '<p>No steps recorded yet.</p>';
+    }
+  }
 }
 
 // Stop recording
 function stopRecording() {
   console.log('Stopping recording');
+  
+  // Process any remaining buffered actions
+  processBuffer();
+  
   if (state.currentInput.element) {
     logInputCompletion(); // Log any pending input
   }
+  
+  // Clear buffer interval
+  if (state.buffer.processingInterval) {
+    clearInterval(state.buffer.processingInterval);
+    state.buffer.processingInterval = null;
+  }
+  
   state.isRecording = false;
   sendInteractionData(); // Send any remaining data
   state.sessionId = null;
+  state.buffer.actions = [];
   updateRecordingIndicator(false);
+  
+  // Hide main window
+  const mainWindow = document.querySelector('.sop-main-window');
+  if (mainWindow) {
+    mainWindow.style.display = 'none';
+  }
+}
+
+// Buffer management functions
+function initializeBuffer() {
+  if (state.buffer.processingInterval) {
+    clearInterval(state.buffer.processingInterval);
+  }
+  
+  state.buffer.processingInterval = setInterval(() => {
+    processBuffer();
+  }, BUFFER_PROCESS_INTERVAL);
+}
+
+function addToBuffer(eventData) {
+  if (!state.isRecording) return;
+  
+  state.buffer.actions.push({
+    ...eventData,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Process immediately if buffer is full
+  if (state.buffer.actions.length >= BUFFER_MAX_SIZE) {
+    processBuffer();
+  }
+}
+
+function processBuffer() {
+  if (!state.buffer.actions.length) return;
+  
+  console.log('Processing buffer:', state.buffer.actions.length, 'actions');
+  
+  // Sort actions by timestamp
+  const sortedActions = state.buffer.actions.sort((a, b) =>
+    new Date(a.timestamp) - new Date(b.timestamp)
+  );
+  
+  // Add to interaction log
+  sortedActions.forEach(action => {
+    state.interactionLog.push(action);
+  });
+  
+  // Clear buffer
+  state.buffer.actions = [];
+  
+  // Update UI without causing refresh
+  requestAnimationFrame(() => {
+    updateMainWindowContent();
+  });
 }
 
 // Log interaction
 function logInteraction(eventData) {
   if (!state.isRecording) return;
-  console.log('Logging interaction:', eventData);
-  state.interactionLog.push(eventData);
+  console.log('Buffering interaction:', eventData);
+  addToBuffer(eventData);
+}
+
+// Update main window content
+function updateMainWindowContent() {
+  const contentElement = document.getElementById('sop-content');
+  if (!contentElement) return;
+
+  const steps = state.interactionLog.map((event, index) => {
+    let stepText = '';
+    switch (event.type) {
+      case 'mouse_click':
+        stepText = `Click ${event.clickType} on ${event.element}`;
+        if (event.text) stepText += ` with text "${event.text}"`;
+        break;
+      case 'text_input':
+        stepText = event.description;
+        break;
+      case 'navigation':
+        stepText = `Navigate to ${event.title || event.to}`;
+        break;
+    }
+    return `<div style="margin-bottom: 10px;">
+      <strong>Step ${index + 1}:</strong> ${stepText}
+    </div>`;
+  }).join('');
+
+  contentElement.innerHTML = steps || '<p>No steps recorded yet.</p>';
 }
 
 // Send interaction data to background script

@@ -25,6 +25,22 @@
   z-index: 9999;
 }
 
+.sop-main-window {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 20%;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 9998;
+  overflow-y: auto;
+  border-left: 1px solid #e5e7eb;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 @keyframes sop-pulse {
   0% { opacity: 1; }
   50% { opacity: 0.5; }

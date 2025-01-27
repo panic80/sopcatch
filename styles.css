@@ -24,9 +24,68 @@ body {
 
 /* Popup styles */
 .sop-popup {
-  width: 340px;
+  width: 600px;
   margin: 0;
   padding: 20px;
+}
+
+/* Live Preview styles */
+.live-preview {
+  border-top: 2px solid var(--border-color);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.live-preview-content {
+  max-height: 400px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.live-preview .sop-header {
+  background: var(--status-bg);
+  padding: 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.live-preview .sop-header h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-color);
+  font-size: 16px;
+}
+
+.live-preview .step {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  background: white;
+}
+
+.live-preview .step:hover {
+  background: var(--hover-color);
+}
+
+.live-preview .step-number {
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.live-preview .step img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.live-preview .metadata {
+  color: var(--secondary-text);
+  font-size: 12px;
 }
 
 /* Options page overrides */
