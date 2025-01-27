@@ -1,0 +1,32 @@
+/* Content script specific styles */
+.sop-recording-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #e25555;
+  z-index: 9999;
+  animation: sop-pulse 2s infinite;
+  box-shadow: 0 0 0 2px rgba(226, 85, 85, 0.2);
+  pointer-events: none;
+}
+
+.sop-click-indicator {
+  position: fixed;
+  pointer-events: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: pink;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+  z-index: 9999;
+}
+
+@keyframes sop-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

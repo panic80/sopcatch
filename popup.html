@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SOP Builder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="sop-popup">
+  <div class="popup-container">
+    <h1>SOP Builder</h1>
+    
+    <div class="recording-controls">
+      <button type="button" id="startRecording" class="button primary">
+        Start Recording
+      </button>
+      <button type="button" id="stopRecording" class="button danger" disabled>
+        Stop Recording
+      </button>
+    </div>
+
+    <div class="status-section">
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="recordingStatus">Not Recording</span>
+      </div>
+      <div id="currentSession" class="current-session">
+        <p>Duration: <span id="duration">00:00</span></p>
+        <p>Steps: <span id="stepCount">0</span></p>
+      </div>
+    </div>
+
+    <div class="actions-section">
+      <button type="button" id="viewSessions" class="button secondary">
+        View Sessions
+      </button>
+      <button type="button" id="openOptions" class="button secondary">
+        Settings
+      </button>
+    </div>
+
+    <div id="sessionsList" class="sessions-list hidden">
+      <h2>Recent Sessions</h2>
+      <div id="sessionsContainer"></div>
+    </div>
+  </div>
+  <!-- Load scripts at the end of body -->
+  <script src="sop-generator.js" defer></script>
+  <script src="popup.js" defer></script>
+</body>
+</html>

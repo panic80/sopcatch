@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SOP Builder Settings</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Options page specific styles */
+    .sop-popup {
+      width: 100% !important;
+      max-width: 800px !important;
+      margin: 0 auto !important;
+      padding: 32px !important;
+    }
+
+    .settings-container {
+      display: grid;
+      gap: 32px;
+    }
+
+    .settings-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .settings-section h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .setting-group {
+      margin-bottom: 24px;
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .setting-item label {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .setting-description {
+      color: #666;
+      font-size: 14px;
+      margin: 4px 0 0 0;
+    }
+
+    .storage-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .storage-card {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .storage-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body class="sop-popup">
+  <div class="settings-container">
+    <h1>SOP Builder Settings</h1>
+
+    <div class="settings-section">
+      <h2>Recording Settings</h2>
+      
+      <div class="setting-group">
+        <div class="setting-item">
+          <label for="mouseTracking">Mouse Movement Tracking</label>
+          <select id="mouseTracking" class="select">
+            <option value="detailed">Detailed</option>
+            <option value="minimal">Minimal</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <p class="setting-description">Control how mouse movements are tracked during recording</p>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-item">
+          <label for="screenshotQuality">Screenshot Quality</label>
+          <select id="screenshotQuality" class="select">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <p class="setting-description">Higher quality means larger file size</p>
+      </div>
+
+      <div class="setting-item">
+        <label for="autoScreenshot">
+          Take screenshots automatically
+          <p class="setting-description">Capture screenshots when significant actions occur</p>
+        </label>
+        <input type="checkbox" id="autoScreenshot" checked>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Privacy Settings</h2>
+      
+      <div class="setting-item">
+        <label for="captureKeyboard">
+          Capture keyboard input
+          <p class="setting-description">Record keyboard events (excluding password fields)</p>
+        </label>
+        <input type="checkbox" id="captureKeyboard" checked>
+      </div>
+
+      <div class="setting-item">
+        <label for="captureFormData">
+          Capture form data
+          <p class="setting-description">Record data entered in forms (excluding sensitive fields)</p>
+        </label>
+        <input type="checkbox" id="captureFormData">
+      </div>
+
+      <div class="setting-item">
+        <label for="blurPersonalInfo">
+          Blur personal information
+          <p class="setting-description">Automatically blur sensitive data in screenshots</p>
+        </label>
+        <input type="checkbox" id="blurPersonalInfo" checked>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Export Settings</h2>
+      
+      <div class="setting-item">
+        <label for="exportFormat">Default Export Format</label>
+        <select id="exportFormat" class="select">
+          <option value="html">HTML</option>
+          <option value="pdf">PDF</option>
+          <option value="markdown">Markdown</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="includeScreenshots">
+          Include screenshots in export
+          <p class="setting-description">Embed captured screenshots in the exported SOP</p>
+        </label>
+        <input type="checkbox" id="includeScreenshots" checked>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Storage</h2>
+      
+      <div class="storage-info">
+        <div class="storage-card">
+          <h3>Sessions Stored</h3>
+          <div id="sessionCount" class="storage-value">0</div>
+        </div>
+        <div class="storage-card">
+          <h3>Storage Used</h3>
+          <div id="storageUsed" class="storage-value">0 MB</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button id="clearData" class="button danger">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
