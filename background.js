@@ -7,8 +7,8 @@ let activeRecordingTabId = null;
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Initializing storage');
   try {
-    const { sopData } = await chrome.storage.local.get('sopData');
-    if (!sopData) {
+    const data = await chrome.storage.local.get(['sopData', 'extensionEnabled']);
+    if (!data.sopData) {
       await chrome.storage.local.set({
         sopData: {
           sessions: [],
@@ -16,6 +16,10 @@ chrome.runtime.onInstalled.addListener(async () => {
         }
       });
       console.log('Storage initialized');
+    }
+    if (data.extensionEnabled === undefined) {
+      await chrome.storage.local.set({ extensionEnabled: true });
+      console.log('Extension state initialized');
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
@@ -60,32 +64,56 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
 // Handle messages from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Received message:', message.type);
-  
-  switch (message.type) {
-    case "START_SESSION":
-      handleStartSession().then(() => sendResponse({ success: true }));
-      break;
-    case "END_SESSION":
-      handleEndSession().then(() => sendResponse({ success: true }));
-      break;
-    case "LOG_DATA":
-      handleLogData(message.payload, sender.tab?.id);
-      break;
-    case "TAKE_SCREENSHOT":
-      handleScreenshot(sender.tab?.id);
-      break;
-    case "GET_SESSIONS":
-      handleGetSessions(sendResponse);
-      return true;
-    case "VIEW_SOP":
-      handleViewSOP(message.sessionId, sendResponse);
-      return true;
-    case "EXPORT_SOP":
-      handleExportSOP(message.sessionId, sendResponse);
-      return true;
+
+  if (message.type === 'EXTENSION_STATE_CHANGED') {
+    console.log('Extension state changed:', message.enabled);
+    return true;
   }
+
+  // Check if action requires extension to be enabled
+  const recordingActions = ['START_SESSION', 'LOG_DATA', 'TAKE_SCREENSHOT'];
+  if (recordingActions.includes(message.type)) {
+    chrome.storage.local.get('extensionEnabled').then(({ extensionEnabled = true }) => {
+      if (!extensionEnabled) {
+        console.log('Extension is disabled, ignoring action:', message.type);
+        sendResponse({ success: false, error: 'Extension is disabled' });
+        return;
+      }
+      handleMessage(message, sender, sendResponse);
+    });
+    return true;
+  }
+
+  // Handle non-recording actions normally
+  handleMessage(message, sender, sendResponse);
   return true;
 });
+
+function handleMessage(message, sender, sendResponse) {
+  switch (message.type) {
+    case 'START_SESSION':
+      handleStartSession().then(() => sendResponse({ success: true }));
+      break;
+    case 'END_SESSION':
+      handleEndSession().then(() => sendResponse({ success: true }));
+      break;
+    case 'LOG_DATA':
+      handleLogData(message.payload, sender.tab?.id);
+      break;
+    case 'TAKE_SCREENSHOT':
+      handleScreenshot(sender.tab?.id);
+      break;
+    case 'GET_SESSIONS':
+      handleGetSessions(sendResponse);
+      break;
+    case 'VIEW_SOP':
+      handleViewSOP(message.sessionId, sendResponse);
+      break;
+    case 'EXPORT_SOP':
+      handleExportSOP(message.sessionId, sendResponse);
+      break;
+  }
+}
 
 // Start a new recording session
 async function handleStartSession() {

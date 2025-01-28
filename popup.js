@@ -7,10 +7,12 @@ let durationInterval = null;
 const state = {
   updateTimeout: null,
   recordingStartTime: null,
-  durationInterval: null
+  durationInterval: null,
+  extensionEnabled: true
 };
 
 // DOM Elements
+const extensionToggle = document.getElementById('extensionToggle');
 const startButton = document.getElementById('startRecording');
 const stopButton = document.getElementById('stopRecording');
 const recordingStatus = document.getElementById('recordingStatus');
@@ -27,13 +29,43 @@ const livePreviewContent = document.getElementById('livePreviewContent');
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
+  await initializeExtensionState();
   updateRecordingStatus();
   setupEventListeners();
   await updateLivePreview(); // Check for existing session
 });
 
+// Initialize extension state
+async function initializeExtensionState() {
+  const { extensionEnabled = true } = await chrome.storage.local.get('extensionEnabled');
+  state.extensionEnabled = extensionEnabled;
+  extensionToggle.checked = extensionEnabled;
+  
+  // Update UI based on extension state
+  updateExtensionState(extensionEnabled);
+}
+
+// Update extension state
+function updateExtensionState(enabled) {
+  state.extensionEnabled = enabled;
+  startButton.disabled = !enabled || startButton.disabled;
+  document.documentElement.style.setProperty('--status-opacity', enabled ? '1' : '0.5');
+}
+
 // Set up event listeners
 function setupEventListeners() {
+  extensionToggle.addEventListener('change', async () => {
+    const enabled = extensionToggle.checked;
+    await chrome.storage.local.set({ extensionEnabled: enabled });
+    updateExtensionState(enabled);
+    
+    // Notify background script of state change
+    chrome.runtime.sendMessage({
+      type: 'EXTENSION_STATE_CHANGED',
+      enabled: enabled
+    });
+  });
+
   startButton.addEventListener('click', startRecording);
   stopButton.addEventListener('click', stopRecording);
   viewSessionsButton.addEventListener('click', toggleSessionsList);
@@ -58,6 +90,11 @@ function setupEventListeners() {
 
 // Start recording
 async function startRecording() {
+  if (!state.extensionEnabled) {
+    alert('Extension is disabled. Enable it to start recording.');
+    return;
+  }
+
   // Notify background script
   chrome.runtime.sendMessage({ type: 'START_SESSION' });
   
@@ -76,6 +113,10 @@ async function startRecording() {
   // Start duration timer
   recordingStartTime = Date.now();
   startDurationTimer();
+
+  // Show live preview
+  sessionsList.classList.add('hidden');
+  await updateLivePreview();
 }
 
 // Stop recording
@@ -348,27 +389,6 @@ function findMatchingScreenshot(session, timestamp) {
   return closestScreenshot ? closestScreenshot.dataUrl : null;
 }
 
-// Modify start recording to show live preview
-async function startRecording() {
-  // Existing start recording code
-  chrome.runtime.sendMessage({ type: 'START_SESSION' });
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  chrome.tabs.sendMessage(tab.id, { type: 'START_RECORDING' });
-  
-  // Update UI
-  startButton.disabled = true;
-  stopButton.disabled = false;
-  recordingStatus.textContent = 'Recording';
-  recordingStatus.classList.add('recording');
-  
-  // Start duration timer
-  recordingStartTime = Date.now();
-  startDurationTimer();
-  
-  // Show live preview
-  sessionsList.classList.add('hidden');
-  await updateLivePreview();
-}
 
 // Modify stop recording to hide live preview
 async function stopRecording() {
